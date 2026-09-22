@@ -64,6 +64,17 @@ TEST(beginTargetsTheConfiguredBrokersAndNetwork) {
   CHECK_TEXT_EQ(fake::wifiConnectAttempts()[0].password, WIFI_PASSWORD);
 }
 
+TEST(wifiConnectionStatusIsAvailableToTheFirmware) {
+  resetFakes();
+  MqttPublisher publisher = makePublisher();
+
+  fake::setWifiStatus(WL_DISCONNECTED);
+  CHECK_TRUE(!publisher.isWifiConnected());
+
+  fake::setWifiStatus(WL_CONNECTED);
+  CHECK_TRUE(publisher.isWifiConnected());
+}
+
 TEST(theBrokerIsNotContactedBeforeWifiIsUp) {
   resetFakes();
   fake::setWifiStatus(WL_DISCONNECTED);

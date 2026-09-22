@@ -12,6 +12,7 @@
 		{"mqtt.example.com", 1883},                                         \
 	}
 #define DEVICE_ID "station-01"
+#define OTA_PASSWORD "replace-with-a-unique-ota-password"
 
 // Optional: how often the station reads its sensors, in
 // milliseconds. Remove this line to keep the 10000 ms default.

@@ -26,6 +26,7 @@ class MqttPublisher {
   void begin();
   void maintainConnection();
   void publishReading(const WeatherReading &reading);
+  bool isWifiConnected() const;
 
  private:
   static const unsigned long WIFI_RETRY_INTERVAL_MS = 10000;

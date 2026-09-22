@@ -1,3 +1,5 @@
+#include <ArduinoOTA.h>
+
 #include "AirQualitySensor.h"
 #include "DaylightSensor.h"
 #include "EnvironmentSensor.h"
@@ -38,6 +40,20 @@ MqttPublisher mqttPublisher(WIFI_SSID, WIFI_PASSWORD, mqttBrokers,
                             mqttBrokerCount, DEVICE_ID);
 
 unsigned long lastReadingMs = 0;
+bool otaWasStarted = false;
+
+void startOta() {
+  ArduinoOTA.setHostname(DEVICE_ID);
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+  ArduinoOTA.onStart([]() { logEvent(INFO, BOARD_LOG_SOURCE, "OTA started"); });
+  ArduinoOTA.onEnd([]() { logEvent(INFO, BOARD_LOG_SOURCE, "OTA finished"); });
+  ArduinoOTA.onError([](ota_error_t) {
+    logEvent(ERROR, BOARD_LOG_SOURCE, "OTA failed");
+  });
+  ArduinoOTA.begin();
+  otaWasStarted = true;
+  logEvent(INFO, BOARD_LOG_SOURCE, "OTA ready");
+}
 
 WeatherReading readAllSensors() {
   WeatherReading reading;
@@ -68,6 +84,13 @@ void setup() {
 
 void loop() {
   mqttPublisher.maintainConnection();
+
+  if (!otaWasStarted && mqttPublisher.isWifiConnected()) {
+    startOta();
+  }
+  if (otaWasStarted) {
+    ArduinoOTA.handle();
+  }
 
   const unsigned long currentTimeMs = millis();
   const bool isReadingDue =

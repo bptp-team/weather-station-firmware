@@ -31,9 +31,13 @@ setup.**
 3. Copy `weather_station/secrets.example.h` to
     `weather_station/secrets.h`.
 4. Edit `weather_station/secrets.h` with the **Wi-Fi credentials**, the **LAN
-    addresses** of the MQTT brokers and, optionally, the **reading interval**.
-5. Open `weather_station/weather_station.ino`, select the **ESP32** board and
-    port, then upload the sketch.
+    addresses** of the MQTT brokers, a unique **OTA password** and, optionally,
+    the **reading interval**.
+5. Select an ESP32 partition scheme that includes OTA partitions, such as
+    **Default** for a board with enough flash.
+6. Open `weather_station/weather_station.ino`, select the **ESP32** board and
+    port, then upload the sketch by USB. This first USB upload installs OTA
+    support on the board.
 
 `secrets.h` is **ignored by Git**. **Do not commit Wi-Fi passwords** or other
 local settings. Anything that changes from one station or test run to the next
@@ -50,8 +54,28 @@ Example local configuration:
         {"mqtt.example.com", 1883}, \
     }
 #define DEVICE_ID "station-01"
+#define OTA_PASSWORD "replace-with-a-unique-ota-password"
 #define READING_INTERVAL_MS 10000
 ```
+
+### Uploading firmware over Wi-Fi
+
+After the first USB upload, power the board with the same Wi-Fi network
+available. The Arduino IDE should show a network port named after `DEVICE_ID`
+once the station connects to Wi-Fi. Select that port and upload the sketch;
+enter the value of `OTA_PASSWORD` when prompted.
+
+OTA is authenticated but not encrypted. Use a unique password for each station
+and restrict the device to a trusted network. Do not commit `secrets.h` or put
+the real password in documentation. If the network port does not appear,
+verify the board is connected to Wi-Fi, the selected partition scheme has OTA
+partitions, and the computer and ESP32 are on the same LAN. The firmware must
+still be compiled with the same board target and partition layout.
+
+The Arduino CLI can upload through the discovered network port as well. List
+available ports, including network ports, with `arduino-cli board list`, then
+pass the reported port to `arduino-cli upload` using the same FQBN used for the
+USB upload.
 
 `MQTT_HOSTS` is an array of `{host, port}` objects. The sketch calculates its
 size automatically, so add or remove broker entries directly in

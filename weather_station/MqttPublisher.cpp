@@ -85,6 +85,10 @@ void MqttPublisher::publishReading(const WeatherReading &reading) {
   }
 }
 
+bool MqttPublisher::isWifiConnected() const {
+  return WiFi.status() == WL_CONNECTED;
+}
+
 void MqttPublisher::connectToWifi() {
   lastWifiAttemptMs = millis();
   wifiFailureWasLogged = false;
