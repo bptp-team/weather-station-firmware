@@ -9,8 +9,11 @@ namespace {
 
 const char *WIFI_SSID = "your-wifi-network";
 const char *WIFI_PASSWORD = "your-wifi-password";
-const char *MQTT_HOST = "192.168.1.20";
-const uint16_t MQTT_PORT = 1883;
+const MqttBrokerConfig MQTT_HOSTS[] = {
+  {"192.168.1.20", 1883},
+  {"cloud.example.com", 1884},
+};
+const size_t MQTT_HOSTS_COUNT = sizeof(MQTT_HOSTS) / sizeof(MQTT_HOSTS[0]);
 const char *DEVICE_ID = "station-01";
 
 // Far enough past boot that both the Wi-Fi and the MQTT retry windows are open.
@@ -23,7 +26,7 @@ void resetFakes() {
 }
 
 MqttPublisher makePublisher() {
-  return MqttPublisher(WIFI_SSID, WIFI_PASSWORD, MQTT_HOST, MQTT_PORT,
+  return MqttPublisher(WIFI_SSID, WIFI_PASSWORD, MQTT_HOSTS, MQTT_HOSTS_COUNT,
                        DEVICE_ID);
 }
 
@@ -50,14 +53,12 @@ WeatherReading sampleReading() {
 
 } // namespace
 
-TEST(beginTargetsTheConfiguredBrokerAndNetwork) {
+TEST(beginTargetsTheConfiguredBrokersAndNetwork) {
   resetFakes();
 
   MqttPublisher publisher = makePublisher();
   publisher.begin();
 
-  CHECK_TEXT_EQ(fake::mqttServerHost(), MQTT_HOST);
-  CHECK_EQ(fake::mqttServerPort(), MQTT_PORT);
   CHECK_EQ(fake::wifiConnectAttempts().size(), size_t(1));
   CHECK_TEXT_EQ(fake::wifiConnectAttempts()[0].ssid, WIFI_SSID);
   CHECK_TEXT_EQ(fake::wifiConnectAttempts()[0].password, WIFI_PASSWORD);
@@ -97,7 +98,7 @@ TEST(theClientIdIdentifiesTheDeviceAndTheBoard) {
   MqttPublisher publisher = makePublisher();
   connect(publisher);
 
-  CHECK_EQ(fake::mqttClientIds().size(), size_t(1));
+  CHECK_EQ(fake::mqttClientIds().size(), MQTT_HOSTS_COUNT);
   CHECK_TEXT_EQ(fake::mqttClientIds()[0], "station-01-44556677");
 }
 
@@ -108,8 +109,8 @@ TEST(anEstablishedConnectionIsServicedInsteadOfReopened) {
   connect(publisher);
   publisher.maintainConnection();
 
-  CHECK_EQ(fake::mqttClientIds().size(), size_t(1));
-  CHECK_EQ(fake::mqttLoopCalls(), 1);
+  CHECK_EQ(fake::mqttClientIds().size(), MQTT_HOSTS_COUNT);
+  CHECK_EQ(fake::mqttLoopCalls(), MQTT_HOSTS_COUNT);
 }
 
 TEST(aReadingIsPublishedOnTheDocumentedTopics) {
@@ -120,9 +121,10 @@ TEST(aReadingIsPublishedOnTheDocumentedTopics) {
   publisher.publishReading(sampleReading());
 
   const std::vector<fake::MqttMessage> &messages = fake::mqttMessages();
-  CHECK_EQ(messages.size(), size_t(6));
+  CHECK_EQ(messages.size(), size_t(12));
 
   CHECK_TEXT_EQ(messages[0].topic, "weather/station-01/airTemperature");
+  CHECK_TEXT_EQ(messages[0].brokerHost, MQTT_HOSTS[0].host);
   CHECK_TEXT_EQ(messages[0].payload, "21.50");
   CHECK_TEXT_EQ(messages[1].topic, "weather/station-01/airPressure");
   CHECK_TEXT_EQ(messages[1].payload, "101325.00");
@@ -134,6 +136,22 @@ TEST(aReadingIsPublishedOnTheDocumentedTopics) {
   CHECK_TEXT_EQ(messages[4].payload, "1024");
   CHECK_TEXT_EQ(messages[5].topic, "weather/station-01/airQuality");
   CHECK_TEXT_EQ(messages[5].payload, "512");
+  CHECK_TEXT_EQ(messages[6].brokerHost, MQTT_HOSTS[1].host);
+  CHECK_TEXT_EQ(messages[6].topic, "weather/station-01/airTemperature");
+}
+
+TEST(aBrokerFailureDoesNotBlockTheOtherBroker) {
+  resetFakes();
+  fake::setMqttConnectSucceedsForHost(MQTT_HOSTS[0].host, false);
+
+  MqttPublisher publisher = makePublisher();
+  connect(publisher);
+  publisher.publishReading(sampleReading());
+
+  CHECK_EQ(fake::mqttMessages().size(), size_t(6));
+  for (const fake::MqttMessage &message : fake::mqttMessages()) {
+    CHECK_TEXT_EQ(message.brokerHost, MQTT_HOSTS[1].host);
+  }
 }
 
 TEST(readingsAreDroppedWhileTheBrokerIsUnreachable) {

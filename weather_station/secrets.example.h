@@ -4,9 +4,13 @@
 #define WIFI_SSID "your-wifi-network"
 #define WIFI_PASSWORD "your-wifi-password"
 
-// Use the Docker host's LAN IP, not localhost.
-#define MQTT_HOST "192.168.1.20"
-#define MQTT_PORT 1883
+// Use the Docker host's LAN IP, not localhost. Add or remove entries as
+// needed; the sketch calculates the broker count from this array.
+#define MQTT_HOSTS                                                        \
+	{                                                                       \
+		{"192.168.1.20", 1883},                                              \
+		{"mqtt.example.com", 1883},                                         \
+	}
 #define DEVICE_ID "station-01"
 
 // Optional: how often the station reads its sensors, in

@@ -4,17 +4,22 @@
 const char *MQTT_LOG_SOURCE = "MQTT";
 
 MqttPublisher::MqttPublisher(const char *wifiSsid, const char *wifiPassword,
-                             const char *mqttHost, uint16_t mqttPort,
+                             const MqttBrokerConfig *mqttBrokers,
+                             size_t mqttBrokerCount,
                              const char *deviceId)
-    : mqttClient(wifiClient),
-      wifiSsid(wifiSsid),
+    : wifiSsid(wifiSsid),
       wifiPassword(wifiPassword),
-      mqttHost(mqttHost),
-      mqttPort(mqttPort),
-      deviceId(deviceId) {}
+      deviceId(deviceId) {
+  brokers.reserve(mqttBrokerCount);
+  for (size_t brokerIndex = 0; brokerIndex < mqttBrokerCount; brokerIndex++) {
+    brokers.emplace_back(mqttBrokers[brokerIndex]);
+  }
+}
 
 void MqttPublisher::begin() {
-  mqttClient.setServer(mqttHost, mqttPort);
+  for (BrokerState &broker : brokers) {
+    broker.mqttClient.setServer(broker.config.host, broker.config.port);
+  }
   connectToWifi();
 }
 
@@ -47,31 +52,37 @@ void MqttPublisher::maintainConnection() {
     return;
   }
 
-  const bool isMqttConnected = mqttClient.connected();
-  const bool isMqttRetryDue =
-      currentTimeMs - lastMqttAttemptMs >= MQTT_RETRY_INTERVAL_MS;
+  for (BrokerState &broker : brokers) {
+    const bool isMqttConnected = broker.mqttClient.connected();
+    const bool isMqttRetryDue = currentTimeMs - broker.lastMqttAttemptMs >=
+                                MQTT_RETRY_INTERVAL_MS;
 
-  if (!isMqttConnected) {
-    if (isMqttRetryDue) {
-      connectToMqtt();
+    if (!isMqttConnected) {
+      if (isMqttRetryDue) {
+        connectToMqtt(broker);
+      }
+      continue;
     }
-    return;
-  }
 
-  mqttClient.loop();
+    broker.mqttClient.loop();
+  }
 }
 
 void MqttPublisher::publishReading(const WeatherReading &reading) {
-  if (!mqttClient.connected()) {
-    return;
-  }
+  for (BrokerState &broker : brokers) {
+    if (!broker.mqttClient.connected()) {
+      continue;
+    }
 
-  publishText("airTemperature", String(reading.temperatureCelsius, 2));
-  publishText("airPressure", String(reading.pressurePascals, 2));
-  publishText("airHumidity", String(reading.relativeHumidityPercent, 2));
-  publishText("daylight", String(reading.daylightRaw));
-  publishText("waterLevel", String(reading.waterLevelRaw));
-  publishText("airQuality", String(reading.airQualityRaw));
+    publishText(broker, "airTemperature",
+                String(reading.temperatureCelsius, 2));
+    publishText(broker, "airPressure", String(reading.pressurePascals, 2));
+    publishText(broker, "airHumidity",
+                String(reading.relativeHumidityPercent, 2));
+    publishText(broker, "daylight", String(reading.daylightRaw));
+    publishText(broker, "waterLevel", String(reading.waterLevelRaw));
+    publishText(broker, "airQuality", String(reading.airQualityRaw));
+  }
 }
 
 void MqttPublisher::connectToWifi() {
@@ -82,12 +93,12 @@ void MqttPublisher::connectToWifi() {
   WiFi.begin(wifiSsid, wifiPassword);
 }
 
-void MqttPublisher::connectToMqtt() {
-  lastMqttAttemptMs = millis();
+void MqttPublisher::connectToMqtt(BrokerState &broker) {
+  broker.lastMqttAttemptMs = millis();
   String clientId = String(deviceId) + "-" + String((uint32_t)ESP.getEfuseMac(), HEX);
 
   logEvent(INFO, MQTT_LOG_SOURCE, "Connecting to MQTT broker");
-  if (mqttClient.connect(clientId.c_str())) {
+  if (broker.mqttClient.connect(clientId.c_str())) {
     logEvent(INFO, MQTT_LOG_SOURCE, "Connected to MQTT broker");
   } else {
     logEvent(WARNING, MQTT_LOG_SOURCE, "MQTT connection failed");
@@ -98,7 +109,8 @@ String MqttPublisher::topicFor(const char *measurement) const {
   return String("weather/") + deviceId + "/" + measurement;
 }
 
-bool MqttPublisher::publishText(const char *measurement, const String &payload) {
+bool MqttPublisher::publishText(BrokerState &broker, const char *measurement,
+                                const String &payload) {
   String topic = topicFor(measurement);
-  return mqttClient.publish(topic.c_str(), payload.c_str());
+  return broker.mqttClient.publish(topic.c_str(), payload.c_str());
 }

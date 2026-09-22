@@ -31,8 +31,7 @@ setup.**
 3. Copy `weather_station/secrets.example.h` to
     `weather_station/secrets.h`.
 4. Edit `weather_station/secrets.h` with the **Wi-Fi credentials**, the **LAN
-    address** of the computer running **Mosquitto** and, optionally, the
-    **reading interval**.
+    addresses** of the MQTT brokers and, optionally, the **reading interval**.
 5. Open `weather_station/weather_station.ino`, select the **ESP32** board and
     port, then upload the sketch.
 
@@ -45,21 +44,31 @@ Example local configuration:
 ```cpp
 #define WIFI_SSID "your-wifi-network"
 #define WIFI_PASSWORD "your-wifi-password"
-#define MQTT_HOST "192.168.1.20"
-#define MQTT_PORT 1883
+#define MQTT_HOSTS \
+    { \
+        {"192.168.1.20", 1883}, \
+        {"mqtt.example.com", 1883}, \
+    }
 #define DEVICE_ID "station-01"
 #define READING_INTERVAL_MS 10000
 ```
+
+`MQTT_HOSTS` is an array of `{host, port}` objects. The sketch calculates its
+size automatically, so add or remove broker entries directly in
+`secrets.h`. Every reading is published independently to each broker that is
+connected. If one broker is unavailable, the other continues normally; the
+firmware does not queue or replay messages for a broker that was offline.
 
 `READING_INTERVAL_MS` is **optional**: it sets how often the station reads its
 sensors, in **milliseconds**. Leave it out and the sketch falls back to
 `10000 ms`. Change it in `secrets.h` while testing so the shorter interval
 **never reaches a commit**.
 
-`MQTT_HOST` must be the **Docker host's LAN IP** or a hostname resolvable by
-the **ESP32**. **Do not use** `localhost`: from the **ESP32**, `localhost` means
-the **ESP32 itself**. `MQTT_PORT` must match the host port published by the
-**Mosquitto Docker Compose** project.
+Each broker host must be the **Docker host's LAN IP** or a hostname resolvable
+by the **ESP32**. **Do not use** `localhost`: from the **ESP32**, `localhost`
+means the **ESP32 itself**. Each port must match the port exposed by its MQTT
+broker. The firmware currently supports anonymous, unencrypted TCP
+connections; TLS and broker credentials are not configured here.
 
 ### Tests
 

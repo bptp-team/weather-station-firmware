@@ -8,6 +8,9 @@
 #include "WeatherReadingLogger.h"
 #include "secrets.h"
 
+const MqttBrokerConfig mqttBrokers[] = MQTT_HOSTS;
+const size_t mqttBrokerCount = sizeof(mqttBrokers) / sizeof(mqttBrokers[0]);
+
 // Local, non-versioned setting: define READING_INTERVAL_MS in secrets.h to
 // change the reading cadence without editing this file.
 #ifndef READING_INTERVAL_MS
@@ -31,8 +34,8 @@ DaylightSensor daylightSensor(LDR_SIGNAL_PIN);
 WaterLevelSensor waterLevelSensor(WATER_SIGNAL_PIN, WATER_POWER_PIN,
                                   WATER_SETTLE_MS);
 AirQualitySensor airQualitySensor(MQ135_SIGNAL_PIN);
-MqttPublisher mqttPublisher(WIFI_SSID, WIFI_PASSWORD, MQTT_HOST, MQTT_PORT,
-                            DEVICE_ID);
+MqttPublisher mqttPublisher(WIFI_SSID, WIFI_PASSWORD, mqttBrokers,
+                            mqttBrokerCount, DEVICE_ID);
 
 unsigned long lastReadingMs = 0;
 

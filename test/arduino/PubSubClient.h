@@ -19,12 +19,18 @@ public:
   bool connected();
   bool loop();
   bool publish(const char *topic, const char *payload);
+
+private:
+  bool isConnected = false;
+  std::string serverHost;
+  uint16_t serverPort = 0;
 };
 
 namespace fake {
 
 // One message the firmware published.
 struct MqttMessage {
+  std::string brokerHost;
   std::string topic;
   std::string payload;
 };
@@ -33,11 +39,10 @@ void resetMqtt();
 
 // Decides whether the next connect() attempts succeed. Defaults to true.
 void setMqttConnectSucceeds(bool succeeds);
+void setMqttConnectSucceedsForHost(const char *host, bool succeeds);
 
 const std::vector<MqttMessage> &mqttMessages();
 const std::vector<std::string> &mqttClientIds();
-std::string mqttServerHost();
-uint16_t mqttServerPort();
 int mqttLoopCalls();
 
 } // namespace fake
