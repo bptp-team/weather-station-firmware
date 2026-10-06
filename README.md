@@ -124,6 +124,14 @@ Each station publishes under its **stable device ID**:
 | `weather/<device-id>/daylight` | **Raw daylight** sensor value | Integer text |
 | `weather/<device-id>/waterLevel` | **Raw water-level** sensor value | Integer text |
 | `weather/<device-id>/airQuality` | **Raw air-quality** sensor value | Integer text |
+| `weather/<device-id>/latitude` | **Station latitude** | Signed decimal degrees, WGS 84 |
+| `weather/<device-id>/longitude` | **Station longitude** | Signed decimal degrees, WGS 84 |
+
+The fixed station location is published with each reading as
+`latitude=-23.20027778` and `longitude=-45.89111111` (23°12'01" S,
+45°53'28" W). South and west are negative in decimal-degree coordinates.
+These coordinates are hardcoded in the firmware because the station does not
+yet have a GPS sensor.
 
 For example, station `station-01` publishes to
 `weather/station-01/airTemperature`.

@@ -30,6 +30,8 @@ const int WATER_SIGNAL_PIN = 35;
 const int WATER_POWER_PIN = 25;
 const int WATER_SETTLE_MS = 10;
 const int MQ135_SIGNAL_PIN = 32;
+const double STATION_LATITUDE = -23.20027778;
+const double STATION_LONGITUDE = -45.89111111;
 
 EnvironmentSensor environmentSensor(BME280_I2C_ADDRESS);
 DaylightSensor daylightSensor(LDR_SIGNAL_PIN);
@@ -65,6 +67,8 @@ WeatherReading readAllSensors() {
   reading.daylightRaw = daylightSensor.readRawDaylight();
   reading.waterLevelRaw = waterLevelSensor.readRawLevel();
   reading.airQualityRaw = airQualitySensor.readRawAirQuality();
+  reading.latitude = STATION_LATITUDE;
+  reading.longitude = STATION_LONGITUDE;
 
   return reading;
 }

@@ -68,6 +68,12 @@ String::String(float number, int decimalPlaces) {
   value = buffer;
 }
 
+String::String(double number, int decimalPlaces) {
+  char buffer[64];
+  snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, number);
+  value = buffer;
+}
+
 void SerialStub::begin(unsigned long baudRate) {
   record("Serial.begin(" + std::to_string(baudRate) + ")");
 }

@@ -9,6 +9,8 @@ struct WeatherReading {
   int daylightRaw;
   int waterLevelRaw;
   int airQualityRaw;
+  double latitude;
+  double longitude;
 };
 
 #endif

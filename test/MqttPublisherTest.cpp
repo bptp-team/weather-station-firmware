@@ -47,6 +47,8 @@ WeatherReading sampleReading() {
   reading.daylightRaw = 2048;
   reading.waterLevelRaw = 1024;
   reading.airQualityRaw = 512;
+  reading.latitude = -23.20027778;
+  reading.longitude = -45.89111111;
 
   return reading;
 }
@@ -132,7 +134,7 @@ TEST(aReadingIsPublishedOnTheDocumentedTopics) {
   publisher.publishReading(sampleReading());
 
   const std::vector<fake::MqttMessage> &messages = fake::mqttMessages();
-  CHECK_EQ(messages.size(), size_t(12));
+  CHECK_EQ(messages.size(), size_t(16));
 
   CHECK_TEXT_EQ(messages[0].topic, "weather/station-01/airTemperature");
   CHECK_TEXT_EQ(messages[0].brokerHost, MQTT_HOSTS[0].host);
@@ -147,8 +149,12 @@ TEST(aReadingIsPublishedOnTheDocumentedTopics) {
   CHECK_TEXT_EQ(messages[4].payload, "1024");
   CHECK_TEXT_EQ(messages[5].topic, "weather/station-01/airQuality");
   CHECK_TEXT_EQ(messages[5].payload, "512");
-  CHECK_TEXT_EQ(messages[6].brokerHost, MQTT_HOSTS[1].host);
-  CHECK_TEXT_EQ(messages[6].topic, "weather/station-01/airTemperature");
+  CHECK_TEXT_EQ(messages[6].topic, "weather/station-01/latitude");
+  CHECK_TEXT_EQ(messages[6].payload, "-23.20027778");
+  CHECK_TEXT_EQ(messages[7].topic, "weather/station-01/longitude");
+  CHECK_TEXT_EQ(messages[7].payload, "-45.89111111");
+  CHECK_TEXT_EQ(messages[8].brokerHost, MQTT_HOSTS[1].host);
+  CHECK_TEXT_EQ(messages[8].topic, "weather/station-01/airTemperature");
 }
 
 TEST(aBrokerFailureDoesNotBlockTheOtherBroker) {
@@ -159,7 +165,7 @@ TEST(aBrokerFailureDoesNotBlockTheOtherBroker) {
   connect(publisher);
   publisher.publishReading(sampleReading());
 
-  CHECK_EQ(fake::mqttMessages().size(), size_t(6));
+  CHECK_EQ(fake::mqttMessages().size(), size_t(8));
   for (const fake::MqttMessage &message : fake::mqttMessages()) {
     CHECK_TEXT_EQ(message.brokerHost, MQTT_HOSTS[1].host);
   }

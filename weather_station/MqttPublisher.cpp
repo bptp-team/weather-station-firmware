@@ -82,6 +82,8 @@ void MqttPublisher::publishReading(const WeatherReading &reading) {
     publishText(broker, "daylight", String(reading.daylightRaw));
     publishText(broker, "waterLevel", String(reading.waterLevelRaw));
     publishText(broker, "airQuality", String(reading.airQualityRaw));
+    publishText(broker, "latitude", String(reading.latitude, 8));
+    publishText(broker, "longitude", String(reading.longitude, 8));
   }
 }
 

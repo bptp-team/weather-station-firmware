@@ -28,6 +28,7 @@ public:
   explicit String(unsigned int number, int base = DEC);
   explicit String(unsigned long number, int base = DEC);
   String(float number, int decimalPlaces);
+  String(double number, int decimalPlaces);
 
   const char *c_str() const { return value.c_str(); }
   const std::string &text() const { return value; }
