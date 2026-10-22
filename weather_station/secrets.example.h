@@ -22,7 +22,7 @@ replace-with-the-contents-of-ca.crt
 #define MQTT_HOSTS                                                        \
 	{                                                                       \
 		{"192.168.1.20", 1883},                                              \
-		{"weather-station.mexicocentral.cloudapp.azure.com", 8883, DEVICE_ID,  \
+		{"weather-station.thomaspalma.com.br", 8883, DEVICE_ID,                 \
 		 MQTT_PASSWORD, MQTT_CA_CERTIFICATE},                                 \
 	}
 
