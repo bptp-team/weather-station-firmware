@@ -20,7 +20,12 @@ enum wifi_mode_t { WIFI_OFF, WIFI_STA, WIFI_AP, WIFI_AP_STA };
 
 // The transport PubSubClient writes through. Nothing to fake: the MQTT stub
 // never touches the socket.
-class WiFiClient {};
+class Client {
+public:
+  virtual ~Client() = default;
+};
+
+class WiFiClient : public Client {};
 
 class WiFiStub {
 public:
