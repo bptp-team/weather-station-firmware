@@ -18,6 +18,9 @@ MqttPublisher::MqttPublisher(const char *wifiSsid, const char *wifiPassword,
 
 void MqttPublisher::begin() {
   for (BrokerState &broker : brokers) {
+    if (broker.usesTls()) {
+      broker.tlsTransport.setCACert(broker.config.caCertificate);
+    }
     broker.mqttClient.setServer(broker.config.host, broker.config.port);
   }
   connectToWifi();
@@ -104,7 +107,8 @@ void MqttPublisher::connectToMqtt(BrokerState &broker) {
   String clientId = String(deviceId) + "-" + String((uint32_t)ESP.getEfuseMac(), HEX);
 
   logEvent(INFO, MQTT_LOG_SOURCE, "Connecting to MQTT broker");
-  if (broker.mqttClient.connect(clientId.c_str())) {
+  if (broker.mqttClient.connect(clientId.c_str(), broker.config.username,
+                                broker.config.password)) {
     logEvent(INFO, MQTT_LOG_SOURCE, "Connected to MQTT broker");
   } else {
     logEvent(WARNING, MQTT_LOG_SOURCE, "MQTT connection failed");
