@@ -1,5 +1,7 @@
 #include "PubSubClient.h"
 
+#include "WiFiClientSecure.h"
+
 namespace {
 
 struct HostConnectionBehavior {
@@ -11,7 +13,19 @@ bool connectSucceeds = true;
 int loopCalls = 0;
 std::vector<fake::MqttMessage> messages;
 std::vector<std::string> clientIds;
+std::vector<fake::MqttConnectAttempt> connectAttempts;
 std::vector<HostConnectionBehavior> hostConnectionBehaviors;
+
+std::string textOrEmpty(const char *text) {
+  return text == nullptr ? "" : text;
+}
+
+std::string caCertificateOf(Client *transport) {
+  const WiFiClientSecure *tlsTransport =
+      dynamic_cast<const WiFiClientSecure *>(transport);
+  return tlsTransport == nullptr ? ""
+                                 : textOrEmpty(tlsTransport->caCertificate());
+}
 
 bool connectionSucceedsForHost(const std::string &host) {
   for (const HostConnectionBehavior &behavior : hostConnectionBehaviors) {
@@ -24,7 +38,7 @@ bool connectionSucceedsForHost(const std::string &host) {
 
 } // namespace
 
-PubSubClient::PubSubClient(WiFiClient &) {}
+PubSubClient::PubSubClient(Client &client) : transport(&client) {}
 
 PubSubClient &PubSubClient::setServer(const char *host, uint16_t port) {
   serverHost = host == nullptr ? "" : host;
@@ -33,7 +47,15 @@ PubSubClient &PubSubClient::setServer(const char *host, uint16_t port) {
 }
 
 bool PubSubClient::connect(const char *clientId) {
-  clientIds.push_back(clientId == nullptr ? "" : clientId);
+  return connect(clientId, nullptr, nullptr);
+}
+
+bool PubSubClient::connect(const char *clientId, const char *username,
+                           const char *password) {
+  clientIds.push_back(textOrEmpty(clientId));
+  connectAttempts.push_back({serverHost, textOrEmpty(clientId),
+                             textOrEmpty(username), textOrEmpty(password),
+                             caCertificateOf(transport)});
   isConnected = connectionSucceedsForHost(serverHost);
   return isConnected;
 }
@@ -63,6 +85,7 @@ void resetMqtt() {
   loopCalls = 0;
   messages.clear();
   clientIds.clear();
+  connectAttempts.clear();
   hostConnectionBehaviors.clear();
 }
 
@@ -76,6 +99,10 @@ void setMqttConnectSucceedsForHost(const char *host, bool succeeds) {
 const std::vector<MqttMessage> &mqttMessages() { return messages; }
 
 const std::vector<std::string> &mqttClientIds() { return clientIds; }
+
+const std::vector<MqttConnectAttempt> &mqttConnectAttempts() {
+  return connectAttempts;
+}
 
 int mqttLoopCalls() { return loopCalls; }
 
