@@ -61,7 +61,7 @@ const char MQTT_CA_CERTIFICATE[] = R"(-----BEGIN CERTIFICATE-----
 #define MQTT_HOSTS \
     { \
         {"192.168.1.20", 1883}, \
-        {"weather-station.mexicocentral.cloudapp.azure.com", 8883, DEVICE_ID, \
+        {"weather-station.thomaspalma.com.br", 8883, DEVICE_ID, \
          MQTT_PASSWORD, MQTT_CA_CERTIFICATE}, \
     }
 #define READING_INTERVAL_MS 10000
@@ -123,7 +123,7 @@ repository:
 
 | Setting | Where it comes from |
 | ------- | ------------------- |
-| Broker host | The `public_fqdn` output of its Terraform module |
+| Broker host | The project domain, `weather-station.thomaspalma.com.br`, described in its README under Domain |
 | `MQTT_PASSWORD` | The output of `scripts/create-mqtt-password.sh <key-vault-name> <DEVICE_ID>` |
 | `MQTT_CA_CERTIFICATE` | The contents of `certificates/ca.crt`, created by `scripts/issue-mqtt-certificate.sh` |
 
