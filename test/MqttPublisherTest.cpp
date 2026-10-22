@@ -9,9 +9,14 @@ namespace {
 
 const char *WIFI_SSID = "your-wifi-network";
 const char *WIFI_PASSWORD = "your-wifi-password";
+const char *CLOUD_BROKER_USERNAME = "station-01";
+const char *CLOUD_BROKER_PASSWORD = "broker-password";
+const char *CLOUD_BROKER_CA_CERTIFICATE =
+    "-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----\n";
 const MqttBrokerConfig MQTT_HOSTS[] = {
   {"192.168.1.20", 1883},
-  {"cloud.example.com", 1884},
+  {"cloud.example.com", 8883, CLOUD_BROKER_USERNAME, CLOUD_BROKER_PASSWORD,
+   CLOUD_BROKER_CA_CERTIFICATE},
 };
 const size_t MQTT_HOSTS_COUNT = sizeof(MQTT_HOSTS) / sizeof(MQTT_HOSTS[0]);
 const char *DEVICE_ID = "station-01";
@@ -113,6 +118,50 @@ TEST(theClientIdIdentifiesTheDeviceAndTheBoard) {
 
   CHECK_EQ(fake::mqttClientIds().size(), MQTT_HOSTS_COUNT);
   CHECK_TEXT_EQ(fake::mqttClientIds()[0], "station-01-44556677");
+}
+
+TEST(aBrokerWithCredentialsReceivesThemOnConnect) {
+  resetFakes();
+
+  MqttPublisher publisher = makePublisher();
+  connect(publisher);
+
+  const fake::MqttConnectAttempt &cloudAttempt =
+      fake::mqttConnectAttempts()[1];
+  CHECK_TEXT_EQ(cloudAttempt.brokerHost, MQTT_HOSTS[1].host);
+  CHECK_TEXT_EQ(cloudAttempt.username, CLOUD_BROKER_USERNAME);
+  CHECK_TEXT_EQ(cloudAttempt.password, CLOUD_BROKER_PASSWORD);
+}
+
+TEST(aBrokerWithoutCredentialsIsReachedAnonymously) {
+  resetFakes();
+
+  MqttPublisher publisher = makePublisher();
+  connect(publisher);
+
+  const fake::MqttConnectAttempt &lanAttempt = fake::mqttConnectAttempts()[0];
+  CHECK_TEXT_EQ(lanAttempt.brokerHost, MQTT_HOSTS[0].host);
+  CHECK_TRUE(lanAttempt.username.empty());
+  CHECK_TRUE(lanAttempt.password.empty());
+}
+
+TEST(aBrokerWithCaCertificateIsReachedOverTls) {
+  resetFakes();
+
+  MqttPublisher publisher = makePublisher();
+  connect(publisher);
+
+  CHECK_TEXT_EQ(fake::mqttConnectAttempts()[1].caCertificate,
+                CLOUD_BROKER_CA_CERTIFICATE);
+}
+
+TEST(aBrokerWithoutCaCertificateIsReachedOverPlainTcp) {
+  resetFakes();
+
+  MqttPublisher publisher = makePublisher();
+  connect(publisher);
+
+  CHECK_TRUE(fake::mqttConnectAttempts()[0].caCertificate.empty());
 }
 
 TEST(anEstablishedConnectionIsServicedInsteadOfReopened) {
