@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <PubSubClient.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 
 #include <vector>
 
@@ -12,6 +13,9 @@
 struct MqttBrokerConfig {
   const char *host;
   uint16_t port;
+  const char *username = nullptr;
+  const char *password = nullptr;
+  const char *caCertificate = nullptr;
 };
 
 class MqttPublisher {
@@ -34,12 +38,23 @@ class MqttPublisher {
 
   struct BrokerState {
     explicit BrokerState(const MqttBrokerConfig &config)
-        : config(config), mqttClient(wifiClient) {}
+        : config(config), mqttClient(selectTransport(config)) {}
+
+    bool usesTls() const { return config.caCertificate != nullptr; }
 
     MqttBrokerConfig config;
-    WiFiClient wifiClient;
+    WiFiClient plainTransport;
+    WiFiClientSecure tlsTransport;
     PubSubClient mqttClient;
     unsigned long lastMqttAttemptMs = 0;
+
+   private:
+    Client &selectTransport(const MqttBrokerConfig &brokerConfig) {
+      if (brokerConfig.caCertificate != nullptr) {
+        return tlsTransport;
+      }
+      return plainTransport;
+    }
   };
 
   std::vector<BrokerState> brokers;
