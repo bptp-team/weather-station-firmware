@@ -52,8 +52,8 @@ WeatherReading sampleReading() {
   reading.daylightRaw = 2048;
   reading.waterLevelRaw = 1024;
   reading.airQualityRaw = 512;
-  reading.latitude = -23.20027778;
-  reading.longitude = -45.89111111;
+  reading.latitude = -23.089397;
+  reading.longitude = -45.698980;
 
   return reading;
 }
@@ -199,9 +199,9 @@ TEST(aReadingIsPublishedOnTheDocumentedTopics) {
   CHECK_TEXT_EQ(messages[5].topic, "weather/station-01/airQuality");
   CHECK_TEXT_EQ(messages[5].payload, "512");
   CHECK_TEXT_EQ(messages[6].topic, "weather/station-01/latitude");
-  CHECK_TEXT_EQ(messages[6].payload, "-23.20027778");
+  CHECK_TEXT_EQ(messages[6].payload, "-23.08939700");
   CHECK_TEXT_EQ(messages[7].topic, "weather/station-01/longitude");
-  CHECK_TEXT_EQ(messages[7].payload, "-45.89111111");
+  CHECK_TEXT_EQ(messages[7].payload, "-45.69898000");
   CHECK_TEXT_EQ(messages[8].brokerHost, MQTT_HOSTS[1].host);
   CHECK_TEXT_EQ(messages[8].topic, "weather/station-01/airTemperature");
 }
